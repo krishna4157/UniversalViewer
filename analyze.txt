@@ -1,0 +1,105 @@
+ <WebView
+             ref={webView => {
+               webview.current = webView;
+             }}
+             originWhitelist={['*']}
+             source={fileType != 'csv' && fileType != 'xls' ? {
+               uri: renderedOnce
+                 ? Platform.OS == 'ios'
+                   ? documentPath
+                   : fileType == 'bmp' ||
+                     fileType == 'jpeg' ||
+                     fileType == 'png' ||
+                     fileType == 'gif' ||
+                     fileType == 'jpg' ||
+                     fileType == 'html'
+                   ? documentPath 
+                   : 'https://drive.google.com/viewerng/viewer?embedded=true&url='+
+                     encodeURIComponent(documentPath) 
+                 : undefined,
+             } : HTMLW}
+            // source={HTMLW}
+             style={styles.webView}
+             javaScriptEnabled={true}
+             domStorageEnabled={true}
+             startInLoadingState={true}
+             sharedCookiesEnabled={true}
+             cacheEnabled={true}
+             allowFileAccess={true}
+             thirdPartyCookiesEnabled={true}
+            //  allowingReadAccessToURL="false"
+            //  onShouldStartLoadWithRequest={(request) => {
+            //   if (Platform.OS === 'android') return false; else return true; 
+            // }}
+            onMessage={async (e) => {
+              console.log("MESSAGE : ", e);
+              // webview.current.injectJavaScript(`window.handleUrlFromRN('{"documentPath":"${documentPath}"}')`);
+            }}
+            injectedJavaScript={script}
+             setSupportMultipleWindows={false}
+            //  onNavigationStateChange={e => {
+            //    console.log(e.url);
+            //    if (e.url.startsWith('intent:#')) {
+            //     webview.current.stopLoading();
+            //     return false;
+            //    }
+
+            //  }}
+           
+            onLayout={() => {
+              console.log("Layout called");
+            }}
+            //  onLoad={updateSource}
+             onLoadEnd={data => {
+              // if(fileType == 'csv' || fileType == 'xls') {
+                fetchData1();
+                // alert("HELLO 123");
+              // }
+              if (Platform.OS === 'android') {isDocumnetRendered(data);}
+              setAckFlag(true);
+             
+            }}
+           />
+
+
+  const fetchData1 = () => {
+    console.log("Fetch data called : ", documentPath);
+     RNFetchBlob.config({
+                        fileCache: true
+                    })
+                        .fetch("GET", documentPath).then((response) => {
+                            if (response && response.data) {
+                                // Process the API response data
+                                console.log("API Response Data:", response.data);
+                                const fileP = response.data;
+                                if(fileType == 'csv' || fileType == 'txt') {
+                                RNFetchBlob.fs.readFile(fileP,'utf8').then((content) => {
+                                  // return content;
+                                  const d = JSON.stringify(content);
+                                  // alert(d)
+                                  // console.log("File Content : ", d);
+                                  webview.current.injectJavaScript(`window.handleApiResponse(${d})`);
+
+                                }).catch((e) => {
+                                  console.log("Error in reading file : ", e);
+                                });
+                              } else if(fileType == 'xls' || fileType == 'xlsx') {
+                                RNFetchBlob.fs.readFile(fileP,'base64').then((content) => {
+                                  // return content;
+                                  const d = JSON.stringify(content);
+                                  // alert(d)
+                                  // console.log("File Content : ", d);
+                                                                   webview.current.injectJavaScript(`window.handleApiResponse(${d})`);
+
+
+
+                                }).catch((e) => {
+                                  console.log("Error in reading file : ", e);
+                                });
+                              }
+                                
+                            }
+                        }).catch((e) => {
+                          console.log("Error in fetching data : ", e);
+                        });
+  };

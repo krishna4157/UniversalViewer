@@ -10,8 +10,58 @@ let buttons = []
 // <button v-for="(sheet, index) in sheets" :key="index" @click="showSheet(sheet)" :class="{'active': activeSheet === sheet}">{{sheet}}</button>
 window.handleApiResponse = function(data) {
   // alert(JSON.stringify(data));
+  let payload = data;
   showExcel(data);
+  if(!data) {
+      console.error("No data provided");
+      return;
+  }
+      if(typeof data === 'string' && data.indexOf('base64,') !== -1) {
+           payload = base64ToUint8Array(data.split('base64,')[1]);
+
+      }
+      if (typeof data === 'string' && payload[payload.length -1] == '"') {
+
+      try{
+          const jsonData = JSON.parse(data);
+          payload = jsonData;
+      } catch (error) {
+          console.error("Error parsing JSON:", error);
+      }
+      }
+      if (typeof data !== 'string') {
+        console.log("File not string");
+      }
+
+
+      var binary;
+      try {
+          binary = base64ToUint8Array(payload);
+          showExcel(binary);
+      } catch (error) {
+          console.error("Error decoding base64:", error);
+      }
 };
+
+function base64ToUint8Array(base64) {
+
+  // Decode the Base64 string to a binary string
+  const binaryString = atob(base64);
+
+  // Get the length of the binary string
+  const length = binaryString.length;
+
+  // Create a Uint8Array to hold the binary data
+  const bytes = new Uint8Array(length);
+
+  // Iterate through the binary string and populate the Uint8Array
+  for (let i = 0; i < length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+      alert("FILE");
+
+  return bytes;
+}
 
 function getFile (e) {
     var reader = new FileReader()
@@ -84,26 +134,7 @@ function clearAll () {
 }
 
 
-window.showExcel = function (data, type) {
-    clearAll()
-    try {
-      if(!data) {
-          console.error("No data provided");
-          return;
-      }
-      if (type === 'base64') {
-          const binaryString = atob(data);
-          // const len = binaryString.length;
-          // const bytes = new Uint8Array(len);
-          // workBook = XLSX.read(data, { type: 'base64' });
-          showExcel(binaryString);
-      } else {
-          workBook = XLSX.read(data, { type: 'binary' });
-      }
-    } catch (error) {
-        console.error("Error reading Excel file:", error);
-    }
-}
+
 
 function showExcel (data) {
     clearAll()
